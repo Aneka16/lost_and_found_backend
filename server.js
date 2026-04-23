@@ -165,13 +165,23 @@ app.delete("/api/items/:id", auth, async (req, res) => {
 
 // SEARCH
 app.get("/api/items/search", async (req, res) => {
-  const { name } = req.query;
+  try {
+    const { name } = req.query;
 
-  const items = await Item.find({
-    itemName: { $regex: name, $options: "i" }
-  });
+    if (!name) {
+      return res.status(400).json({ msg: "Search query required" });
+    }
 
-  res.json(items);
+    const items = await Item.find({
+      itemName: { $regex: name, $options: "i" }
+    });
+
+    res.json(items);
+
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ msg: "Server error" });
+  }
 });
 
 /* =======================
