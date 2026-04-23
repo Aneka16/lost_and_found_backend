@@ -109,66 +109,33 @@ app.post("/api/login", async (req, res) => {
 
 // ADD ITEM
 app.post("/api/items", auth, async (req, res) => {
-  const item = await Item.create({
-    ...req.body,
-    userId: req.user.id
-  });
-
-  res.json(item);
+  try {
+    const item = await Item.create({
+      ...req.body,
+      userId: req.user.id
+    });
+    res.json(item);
+  } catch (err) {
+    res.status(500).json({ msg: "Server error" });
+  }
 });
 
 // GET ALL ITEMS
 app.get("/api/items", async (req, res) => {
-  const items = await Item.find().populate("userId", "name email");
-  res.json(items);
+  try {
+    const items = await Item.find().populate("userId", "name email");
+    res.json(items);
+  } catch {
+    res.status(500).json({ msg: "Server error" });
+  }
 });
 
-// GET ITEM BY ID
-app.get("/api/items/:id", async (req, res) => {
-  const item = await Item.findById(req.params.id);
-  res.json(item);
-});
-
-// UPDATE ITEM
-app.put("/api/items/:id", auth, async (req, res) => {
-  const item = await Item.findById(req.params.id);
-
-  if (!item)
-    return res.status(404).json({ msg: "Item not found" });
-
-  if (item.userId.toString() !== req.user.id)
-    return res.status(403).json({ msg: "Unauthorized" });
-
-  const updated = await Item.findByIdAndUpdate(
-    req.params.id,
-    req.body,
-    { new: true }
-  );
-
-  res.json(updated);
-});
-
-// DELETE ITEM
-app.delete("/api/items/:id", auth, async (req, res) => {
-  const item = await Item.findById(req.params.id);
-
-  if (!item)
-    return res.status(404).json({ msg: "Item not found" });
-
-  if (item.userId.toString() !== req.user.id)
-    return res.status(403).json({ msg: "Unauthorized" });
-
-  await Item.findByIdAndDelete(req.params.id);
-
-  res.json({ msg: "Item deleted" });
-});
-
-// SEARCH
+// ✅ SEARCH (MUST BE BEFORE :id)
 app.get("/api/items/search", async (req, res) => {
   try {
     const { name } = req.query;
 
-    if (!name) {
+    if (!name || !name.trim()) {
       return res.status(400).json({ msg: "Search query required" });
     }
 
@@ -177,9 +144,63 @@ app.get("/api/items/search", async (req, res) => {
     });
 
     res.json(items);
-
   } catch (err) {
     console.log(err);
+    res.status(500).json({ msg: "Server error" });
+  }
+});
+
+// GET ITEM BY ID
+app.get("/api/items/:id", async (req, res) => {
+  try {
+    const item = await Item.findById(req.params.id);
+    if (!item)
+      return res.status(404).json({ msg: "Item not found" });
+
+    res.json(item);
+  } catch {
+    res.status(500).json({ msg: "Invalid ID" });
+  }
+});
+
+// UPDATE ITEM
+app.put("/api/items/:id", auth, async (req, res) => {
+  try {
+    const item = await Item.findById(req.params.id);
+
+    if (!item)
+      return res.status(404).json({ msg: "Item not found" });
+
+    if (item.userId.toString() !== req.user.id)
+      return res.status(403).json({ msg: "Unauthorized" });
+
+    const updated = await Item.findByIdAndUpdate(
+      req.params.id,
+      req.body,
+      { new: true }
+    );
+
+    res.json(updated);
+  } catch {
+    res.status(500).json({ msg: "Server error" });
+  }
+});
+
+// DELETE ITEM
+app.delete("/api/items/:id", auth, async (req, res) => {
+  try {
+    const item = await Item.findById(req.params.id);
+
+    if (!item)
+      return res.status(404).json({ msg: "Item not found" });
+
+    if (item.userId.toString() !== req.user.id)
+      return res.status(403).json({ msg: "Unauthorized" });
+
+    await Item.findByIdAndDelete(req.params.id);
+
+    res.json({ msg: "Item deleted" });
+  } catch {
     res.status(500).json({ msg: "Server error" });
   }
 });
